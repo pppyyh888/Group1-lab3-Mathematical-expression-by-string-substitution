@@ -215,7 +215,52 @@ def test_evaluation_limit_is_reported() -> None:
     interpreter = ExpressionSubstitutionInterpreter()
 
     with pytest.raises(EvaluationLimitError):
-        interpreter.evaluate("1 + 2", max_steps=1)
+        interpreter.evaluate("1 + 2 + 3", max_steps=1)
+
+
+def test_max_steps_allows_exact_number_of_substitutions() -> None:
+    """Interpreter should finish when max_steps exactly matches trace size."""
+    interpreter = ExpressionSubstitutionInterpreter()
+
+    assert_close(interpreter.evaluate_value("1 + 2", max_steps=1), 3.0)
+
+
+@pytest.mark.parametrize(
+    "expression",
+    ["1(2)", "(1)2", "(1)(2)", "2sin(0)", "sin(0)2"],
+)
+def test_missing_operator_between_values_is_rejected(expression: str) -> None:
+    """Expressions must not use implicit multiplication or concatenation."""
+    interpreter = ExpressionSubstitutionInterpreter()
+
+    with pytest.raises(ExpressionSyntaxError):
+        interpreter.evaluate(expression)
+
+
+def test_missing_operator_near_variable_is_rejected() -> None:
+    """A variable adjacent to a number must be rejected."""
+    interpreter = ExpressionSubstitutionInterpreter()
+
+    with pytest.raises(ExpressionSyntaxError):
+        interpreter.evaluate("2a + 1", {"a": 3})
+
+
+def test_user_function_runtime_error_is_wrapped() -> None:
+    """Unexpected user function errors should become FunctionCallError."""
+    interpreter = ExpressionSubstitutionInterpreter()
+
+    with pytest.raises(FunctionCallError):
+        interpreter.evaluate("boom(1)", functions={
+            "boom": lambda value: 1 / 0,
+        })
+
+
+def test_scientific_notation_is_supported() -> None:
+    """Scientific notation should be parsed as one number literal."""
+    interpreter = ExpressionSubstitutionInterpreter()
+
+    assert_close(interpreter.evaluate_value("2e3 + 1"), 2001.0)
+    assert_close(interpreter.evaluate_value("2e-3 + 1"), 1.002)
 
 
 @given(INTEGER_VALUES, INTEGER_VALUES)

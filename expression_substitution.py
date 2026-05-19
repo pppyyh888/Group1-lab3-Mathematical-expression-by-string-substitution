@@ -276,6 +276,14 @@ class NamedFunction(FunctionDelegate):
                     error,
                 )
             ) from error
+        except Exception as error:
+            raise FunctionCallError(
+                "Function '{0}' failed for arguments {1}: {2}".format(
+                    self.name,
+                    args,
+                    error,
+                )
+            ) from error
         return _checked_float(result, "function '{}'".format(self.name))
 
 
@@ -376,6 +384,10 @@ class ExpressionSubstitutionInterpreter:
                 step.after,
             )
             _ensure_parentheses_are_balanced(current)
+            if _is_number_literal(current):
+                value = _checked_float(float(current), "final expression")
+                LOGGER.info("Evaluation finished: %s", current)
+                return EvaluationResult(value, current, tuple(trace))
 
         raise EvaluationLimitError(
             "Evaluation did not finish after {0} substitution steps: {1}"
@@ -461,6 +473,11 @@ class ExpressionSubstitutionInterpreter:
             return None
 
         if function_name is None and _is_number_literal(inside):
+            if _has_adjacent_value(expression, open_index, close_index + 1):
+                raise ExpressionSyntaxError(
+                    "Missing operator near parentheses in expression '{0}'"
+                    .format(expression)
+                )
             return _Replacement(
                 start=open_index,
                 end=close_index + 1,
@@ -565,7 +582,6 @@ class ExpressionSubstitutionInterpreter:
         raise ExpressionSyntaxError("Unknown operator '{0}'".format(symbol))
 
 
-# Public convenience function for simple scripts and tests.
 def evaluate_expression(
     expression: str,
     variables: Optional[Mapping[str, NumberLike]] = None,
@@ -644,8 +660,15 @@ def _find_variable_replacement(
     """Find the first variable that can be replaced with its value."""
     for match in _IDENTIFIER_RE.finditer(expression):
         name = match.group(0)
+        if _is_identifier_part_of_number_exponent(expression, match):
+            continue
         if match.end() < len(expression) and expression[match.end()] == "(":
             continue
+        if _has_adjacent_value(expression, match.start(), match.end()):
+            raise ExpressionSyntaxError(
+                "Missing operator near variable '{0}' in expression '{1}'"
+                .format(name, expression)
+            )
         if name not in context.variables:
             raise UnknownVariableError(
                 "Unknown variable '{0}' in expression '{1}'".format(
@@ -661,6 +684,46 @@ def _find_variable_replacement(
             reason="variable substitution",
         )
     return None
+
+
+def _has_adjacent_value(expression: str, start: int, end: int) -> bool:
+    """Return True when a value is adjacent without an operator."""
+    left_is_value = start > 0 and _can_end_value(expression[start - 1])
+    right_is_value = (
+        end < len(expression)
+        and _can_start_value(expression[end])
+    )
+    return left_is_value or right_is_value
+
+
+def _can_end_value(char: str) -> bool:
+    """Return True when char may end a numeric expression value."""
+    return char.isalnum() or char in "_.)"
+
+
+def _can_start_value(char: str) -> bool:
+    """Return True when char may start a numeric expression value."""
+    return char.isalnum() or char in "_.("
+
+
+def _is_identifier_part_of_number_exponent(
+    expression: str,
+    match: re.Match[str],
+) -> bool:
+    """Return True when a regex identifier is an exponent part."""
+    name = match.group(0)
+    if name[0] not in "eE" or match.start() == 0:
+        return False
+    previous = expression[match.start() - 1]
+    if not (previous.isdigit() or previous == "."):
+        return False
+    if len(name) > 1:
+        return name[1:].isdigit()
+    return (
+        match.end() + 1 < len(expression)
+        and expression[match.end()] in "+-"
+        and expression[match.end() + 1].isdigit()
+    )
 
 
 def _find_function_replacement(
@@ -680,6 +743,11 @@ def _find_function_replacement(
             continue
 
         delegate = _function_delegate_for(name, context.functions)
+        if _has_adjacent_value(expression, name_start, close_index + 1):
+            raise ExpressionSyntaxError(
+                "Missing operator near function call '{0}' in expression '{1}'"
+                .format(name, expression)
+            )
         result = delegate.apply(args)
         return _Replacement(
             start=name_start,
@@ -922,10 +990,7 @@ def _is_number_literal(value: str) -> bool:
 
 def _contains_identifier_or_parentheses(expression: str) -> bool:
     """Return True if flat numeric reduction is not applicable."""
-    return any(
-        char.isalpha() or char == "_" or char in "()"
-        for char in expression
-    )
+    return "(" in expression or ")" in expression
 
 
 def _is_identifier(name: str) -> bool:
