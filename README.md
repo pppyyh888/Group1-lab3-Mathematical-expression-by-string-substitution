@@ -2,21 +2,19 @@
 
 ## Description
 
-This project contains a small mathematical expression interpreter for Lab 3 of
-the Computational Process Organization course.
+This project contains an interpreter for mathematical expressions based on
+repeated string substitution for Lab 3 of the Computational Process
+Organization course.
 
-The selected variant is mathematical expression by string substitution. The
-interpreter receives an expression as a string, finds the next reducible part of
-the expression, calculates it, and replaces that substring with the calculated
-value. This process continues until the whole expression becomes one final
-numeric value.
-
-The project focuses on a simple, explicit model of computation. The execution
-process is observable through a substitution trace and logging messages.
+The main goal of this laboratory work is to implement a basic model of
+computation. The selected variant evaluates expressions by repeatedly finding
+small reducible parts of an expression string, replacing them with calculated
+values, and recording the complete substitution trace.
 
 ## Project Structure
 
-- `expression_substitution.py` - implementation of the expression interpreter
+- `expression_substitution.py` - implementation of the expression
+  substitution interpreter
 - `expression_substitution_test.py` - unit tests and property-based tests
 - `requirements.txt` - project dependency list
 - `README.md` - project description and design notes
@@ -26,200 +24,99 @@ process is observable through a substitution trace and logging messages.
 - Pan Yuehao - implementation, testing, and documentation
 - Pan Xuanting - lab requirements check, summarize
 
-## Input Language
-
-The interpreter accepts mathematical expressions written as strings.
-
-Supported syntax:
-
-- numbers, including integers, decimal numbers, and scientific notation
-- variables such as `a`, `b`, `x1`, and `total_value`
-- binary operators: `+`, `-`, `*`, `/`, and `^`
-- parentheses for explicit evaluation order
-- built-in function calls such as `sin(0)` and `sqrt(4)`
-- user-defined function calls such as `foo(1 + 2)`
-
-Example expression:
-
-```text
-a + 2 - sin(-0.3) * (b - c)
-```
-
-The language does not support implicit multiplication. For example, `2a`,
-`1(2)`, and `sin(0)2` are rejected as syntax errors.
-
 ## Features
 
-- Mathematical expression evaluation by repeated string substitution
-- Input expressions represented as strings
-- Variable substitution
-- Built-in mathematical functions
-- User-defined functions
-- Binary operations for addition, subtraction, multiplication, division, and
-  power
-- Parenthesized expression reduction
-- Scientific notation support
-- Explicit rejection of missing operators between adjacent values
-- Custom exception classes for syntax, variable, function, division, and
-  evaluation limit errors
-- Detailed runtime error messages
-- Execution trace with `before`, `target`, `replacement`, `after`, and `reason`
+- Mathematical expression interpreter implementation
+- String-substitution evaluation model
+- Input language based on expression strings
+- Support for integer and floating-point numbers
+- Support for scientific notation
+- Support for variables
+- Support for parentheses
+- Support for binary arithmetic operations
+- Support for `+`, `-`, `*`, `/`, and `^`
+- Support for built-in mathematical functions
+- Support for user-defined functions
+- Runtime error handling with custom exception classes
+- Detailed error messages for invalid expressions
+- Substitution trace for every evaluation step
 - Markdown trace visualization
 - GraphViz DOT trace visualization
-- Logging with the standard Python `logging` module
-- Aspect-Oriented Programming (AOP) style public input validation
-- Operation and function dispatch through delegation objects
-- No use of Python `eval()` or `exec()`
+- Python `logging` integration
+- Delegation-based operation dispatch
+- Aspect-oriented input validation with decorators
+- Public API validation for expression, variables, functions, and step limit
 - Unit tests
-- Property-Based Testing (PBT) with Hypothesis
-- Tests for simple examples, complex examples, corner cases, and errors
-
-## Public Application Programming Interface
-
-The main class is `ExpressionSubstitutionInterpreter`.
-
-```python
-from expression_substitution import ExpressionSubstitutionInterpreter
-
-interpreter = ExpressionSubstitutionInterpreter()
-
-result = interpreter.evaluate(
-    "a + 2 - sin(-0.3) * (b - c)",
-    variables={"a": 1, "b": 5, "c": 3},
-)
-
-print(result.value)
-print(result.trace_as_markdown())
-```
-
-The module also provides a helper function for simple use cases.
-
-```python
-from expression_substitution import evaluate_expression
-
-result = evaluate_expression("x + 1", variables={"x": 41})
-print(result.value)
-```
-
-## Example Substitution Process
-
-For this expression:
-
-```text
-a + 2 * (b - c)
-```
-
-with this input data:
-
-```python
-{"a": 1, "b": 5, "c": 3}
-```
-
-the interpreter performs substitutions similar to this process:
-
-```text
-a+2*(b-c)
-1+2*(b-c)
-1+2*(5-c)
-1+2*(5-3)
-1+2*2
-1+4
-5
-```
-
-Each step is stored in the trace as a `SubstitutionStep`.
-
-## How to Run
-
-Install project dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run tests:
-
-```bash
-pytest
-```
-
-Run tests with coverage:
-
-```bash
-coverage run -m pytest
-coverage report -m
-```
-
-Run static checks:
-
-```bash
-pycodestyle .
-pyflakes .
-mypy .
-```
+- Property-Based Testing with Hypothesis
+- Tests for simple arithmetic expressions
+- Tests for variables and function calls
+- Tests for complex expressions
+- Tests for runtime errors and corner cases
+- Tests for logging and trace visualization
 
 ## Changelog
 
 - Initial project setup from course template
-- Added mathematical expression interpreter for Lab 3
-- Added expression evaluation by string substitution
-- Added variables and arithmetic operations
-- Added parenthesized expression reduction
+- Added mathematical expression substitution interpreter
+- Added string-substitution evaluation process
+- Added input language for arithmetic expressions
+- Added variable substitution support
 - Added built-in mathematical functions
 - Added user-defined function support
-- Added custom runtime error classes
+- Added custom exception classes for runtime errors
 - Added substitution trace data structures
 - Added Markdown and GraphViz DOT trace visualization
-- Added logging for the evaluation process
-- Added Aspect-Oriented Programming style input validation
-- Added checks for missing operators between adjacent values
-- Added scientific notation support
-- Added unit tests for simple and complex expressions
-- Added tests for variables, functions, logging, trace, and visualization
+- Added Python logging for evaluation steps
+- Added delegation-based binary operation handling
+- Added aspect-oriented input validation decorators
+- Added unit tests for main interpreter features
+- Added complex example test for the expression substitution variant
 - Added corner case tests for invalid syntax and runtime errors
 - Added Property-Based Testing for arithmetic properties
 - Updated README for Lab 3
 
 ## Design Notes
 
-This project implements Lab 3 as a small interpreter for a restricted
-mathematical expression language. The interpreter does not evaluate the input
-string with Python evaluation tools. Instead, it repeatedly searches for the
-next reducible substring and replaces it with a calculated value.
+This project implements Lab 3 as a basic model of computation. The selected
+variant represents a computational process as repeated rewriting of a
+mathematical expression string. Each evaluation step finds a reducible part of
+the current string and replaces it with the calculated result.
 
-The main execution result is represented by `EvaluationResult`. It contains
-the final numeric value, the final expression string, and the complete
-substitution trace. Each trace entry is represented by `SubstitutionStep` and
-records the expression before the replacement, the replaced substring, the
-replacement value, the expression after the replacement, and the reason for the
-replacement.
+The input language is intentionally small. It supports numeric values,
+variables, parentheses, arithmetic operations, and function calls. This keeps
+the interpreter focused on the laboratory goal and avoids building a full
+programming language.
 
-The interpreter uses delegation for operations and functions. Binary
-operations are represented by subclasses of `BinaryOperation`. Function calls
-are represented by `FunctionDelegate` objects. This keeps operation selection
-separate from the main evaluation algorithm.
+The implementation does not use Python string evaluation. It does not call
+`eval` or `exec`. Instead, it tokenizes flat numeric fragments and reduces one
+operation at a time according to operator precedence.
 
-The evaluation strategy is intentionally simple. The interpreter first handles
-variables, then function calls, then innermost parentheses, and then arithmetic
-operations in flat numeric expressions. This order keeps the string
-substitution process explicit and easy to trace.
+The interpreter records each substitution in a `SubstitutionStep` object. The
+complete result is returned as an `EvaluationResult` object. This object stores
+the final numeric value, the final expression string, and the full trace of the
+computational process.
 
-Input data control is implemented in an aspect-oriented style. Public
-evaluation methods are protected by validation decorators that check
-expression type, empty expressions, variable mappings, function mappings, and
-the evaluation step limit before interpretation starts.
+The trace is also used for visualization. The result can be represented as a
+Markdown table or as a GraphViz DOT graph. These views show how the original
+expression changes step by step until the final value is reached.
 
-Runtime errors are reported with custom exceptions. This makes failures more
-specific than generic Python exceptions and helps tests verify error behavior
-directly. Division by zero, unknown variables, unknown functions, syntax
-errors, function call failures, and evaluation limit failures all have separate
-exception classes.
+Binary operations and function calls are selected by delegation. Operation and
+function objects provide matching and execution behavior. This avoids direct
+switch-style implementation of operation semantics in the main interpreter
+logic.
 
-The implementation rejects implicit multiplication and value concatenation.
-Expressions such as `2a`, `1(2)`, and `sin(0)2` are treated as syntax errors.
-This keeps the input language small and avoids ambiguous string replacement
-results.
+Input data control is implemented in an aspect-oriented style with decorators.
+Public evaluation methods validate expression type, non-empty expressions,
+variables, user-defined functions, and the maximum number of substitution
+steps before running the interpreter.
 
-The test suite combines example-based unit tests and Property-Based Testing.
-Unit tests check the required behavior directly. Property-Based Testing checks
-general arithmetic properties over generated input values.
+Runtime errors are represented by custom exception classes. The interpreter
+reports unknown variables, unknown functions, invalid syntax, invalid function
+calls, division by zero, and exhausted evaluation limits with detailed error
+messages.
+
+The tests include ordinary unit tests and Property-Based Testing. Unit tests
+cover simple examples, the complex variant expression, trace contents,
+visualization output, logging, input validation, and corner cases. Property-
+Based Testing checks arithmetic properties over many automatically generated
+integer inputs.
